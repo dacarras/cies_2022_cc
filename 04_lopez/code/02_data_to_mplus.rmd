@@ -1,0 +1,322 @@
+---
+title: "Code 2: data to mplus"
+subtitle: 'sexism on aut'
+author: "natalia & dacarras"
+date: '`r format(Sys.time(), "%a %b %d, %Y")`'
+output:
+  html_document:
+    theme: paper
+    highlight: kate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    fig_width: 10 
+    fig_height: 8 
+---
+
+<style>
+  .main-container {
+    max-width: 1600px !important;
+  }
+  .list-group-item.active, 
+  .list-group-item.active:focus, 
+  .list-group-item.active:hover {
+    background-color: #373334;
+  }
+</style>
+
+
+```{r , echo=TRUE, include = FALSE}
+# -----------------------------------------------
+# general setup
+# -----------------------------------------------
+
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'png')
+options(knitr.kable.NA = '')
+options(scipen = 9999)
+
+rm(list = ls()) # remove all previous objects
+
+# fonts
+Sys.setenv(LANG="en_US.UTF-8")
+
+# -----------------------------------------------
+# get times
+# -----------------------------------------------
+
+start_time <- Sys.time()
+
+# -----------------------------------------------
+# local path
+# -----------------------------------------------
+
+# get local path from relative path
+local_path <- function(x){
+paste0(tools::file_path_as_absolute(x),'/')  
+}
+
+
+
+```
+
+# Folder locations
+
+```{r, echo=TRUE}
+
+# -------------------------------------------------------------------
+# folder locations
+# -------------------------------------------------------------------
+
+# -----------------------------------------------
+# dacarras folders
+# -----------------------------------------------
+
+data_folder   <- '/Users/n/Dropbox/_gender&rwa/04_estimates/03_data/'
+output_folder <- '/Users/n/Dropbox/_gender&rwa/10_syntax_2016/'
+mplus_folder  <- '/Users/n/Dropbox/_gender&rwa/10_syntax_2016/mplus/'
+tables_folder <- '/Users/n/Dropbox/_gender&rwa/10_syntax_2016/tables/'
+
+# -----------------------------------------------
+# check folders
+# -----------------------------------------------
+
+list.files(data_folder)
+list.files(output_folder)
+list.files(mplus_folder)
+list.files(tables_folder)
+
+
+# -----------------------------------------------
+# load main library
+# -----------------------------------------------
+
+library(dplyr)
+
+```
+
+# Read files
+
+```{r, echo=TRUE}
+
+# -------------------------------------------------------------------
+# open file
+# -------------------------------------------------------------------
+
+data_gen <- readRDS(paste0(data_folder, 'data_gen.rds'))
+
+# -----------------------------------------------
+# check data structure
+# -----------------------------------------------
+
+dplyr::glimpse(data_gen)
+
+# -----------------------------------------------
+# check data structure
+# -----------------------------------------------
+
+data_model <- readRDS(paste0(data_folder, 'data_gen.rds')) %>%
+              dplyr::select(-cty) %>%
+              r4sda::remove_labels()
+
+# -----------------------------------------------
+# check data structure
+# -----------------------------------------------
+
+dplyr::glimpse(data_model)
+
+
+```
+
+# Folders per group
+
+```{r , echo=TRUE}
+
+# -------------------------------------------------------------------
+# folders for each group
+# -------------------------------------------------------------------
+
+# -----------------------------------------------
+# group variable
+# -----------------------------------------------
+
+dplyr::count(data_gen, grp, cty, year)
+
+# -----------------------------------------------
+# create folders
+# -----------------------------------------------
+
+# dir.create(paste0(mplus_folder,'chl_09'))
+# dir.create(paste0(mplus_folder,'chl_16'))
+# dir.create(paste0(mplus_folder,'col_09'))
+# dir.create(paste0(mplus_folder,'col_16'))
+# dir.create(paste0(mplus_folder,'dom_09'))
+# dir.create(paste0(mplus_folder,'dom_16'))
+# dir.create(paste0(mplus_folder,'mex_09'))
+# dir.create(paste0(mplus_folder,'mex_16'))
+# dir.create(paste0(mplus_folder,'gtm_09'))
+# dir.create(paste0(mplus_folder,'pry_09'))
+# dir.create(paste0(mplus_folder,'per_16'))
+
+# -----------------------------------------------
+# retrieve folder locations
+# -----------------------------------------------
+
+folder_1 <- local_path(paste0(mplus_folder,'chl_09'))
+folder_2 <- local_path(paste0(mplus_folder,'chl_16'))
+folder_3 <- local_path(paste0(mplus_folder,'col_09'))
+folder_4 <- local_path(paste0(mplus_folder,'col_16'))
+folder_5 <- local_path(paste0(mplus_folder,'dom_09'))
+folder_6 <- local_path(paste0(mplus_folder,'dom_16'))
+folder_7 <- local_path(paste0(mplus_folder,'mex_09'))
+folder_8 <- local_path(paste0(mplus_folder,'mex_16'))
+folder_9 <- local_path(paste0(mplus_folder,'gtm_09'))
+folder_10 <- local_path(paste0(mplus_folder,'pry_09'))
+folder_11 <- local_path(paste0(mplus_folder,'per_16'))
+
+# -----------------------------------------------
+# generate data per group
+# -----------------------------------------------
+
+chl_09 <- dplyr::filter(data_model, grp == 1)
+chl_16 <- dplyr::filter(data_model, grp == 2)
+col_09 <- dplyr::filter(data_model, grp == 3)
+col_16 <- dplyr::filter(data_model, grp == 4)
+dom_09 <- dplyr::filter(data_model, grp == 5)
+dom_16 <- dplyr::filter(data_model, grp == 6)
+mex_09 <- dplyr::filter(data_model, grp == 7)
+mex_16 <- dplyr::filter(data_model, grp == 8)
+gtm_09 <- dplyr::filter(data_model, grp == 9)
+pry_09 <- dplyr::filter(data_model, grp == 10)
+per_09 <- dplyr::filter(data_model, grp == 11)
+
+# -----------------------------------------------
+# diagnosed data
+# -----------------------------------------------
+
+data_gen %>%
+dplyr::select(cty, year, ge1) %>%
+group_by(cty, year) %>%
+skimr::skim()
+
+
+data_gen %>%
+dplyr::select(cty, year, ge4) %>%
+group_by(cty, year) %>%
+skimr::skim()
+
+
+```
+
+
+# Data to MPLUS as function
+
+```{r , echo=TRUE}
+
+# -------------------------------------------------------------------
+# pseudo function to export data to MPLUS
+# -------------------------------------------------------------------
+
+export_to_mplus <- function(data, folder){
+
+#------------------------------------------------
+# arguments
+#------------------------------------------------
+
+data_model   <- data
+mplus_folder <- folder
+
+#------------------------------------------------
+# separate plausible values from else
+#------------------------------------------------
+
+# plausible values list
+plausible_values <- dplyr::select(data_model, 
+                                civ1, civ1_c, civ1_g, civ1_m, civ1_w, civ1_b,
+                                civ2, civ2_c, civ2_g, civ2_m, civ2_w, civ2_b,
+                                civ3, civ3_c, civ3_g, civ3_m, civ3_w, civ3_b,
+                                civ4, civ4_c, civ4_g, civ4_m, civ4_w, civ4_b,
+                                civ5, civ5_c, civ5_g, civ5_m, civ5_w, civ5_b
+                                )
+
+# get first part
+non_plausible_values  <- dplyr::select(data_model, -one_of(names(plausible_values)))
+
+#------------------------------------------------
+# produce a single data_frame per plausible values
+#------------------------------------------------
+
+data_1 <- left_join(non_plausible_values, 
+          dplyr::select(data_model, id_i, civ1, civ1_c, civ1_g, civ1_m, civ1_w, civ1_b), 
+          by = 'id_i') 
+
+data_2 <- left_join(non_plausible_values, 
+          dplyr::select(data_model, id_i, civ2, civ2_c, civ2_g, civ2_m, civ2_w, civ2_b), 
+          by = 'id_i') 
+
+data_3 <- left_join(non_plausible_values, 
+          dplyr::select(data_model, id_i, civ3, civ3_c, civ3_g, civ3_m, civ3_w, civ3_b), 
+          by = 'id_i')
+
+data_4 <- left_join(non_plausible_values, 
+          dplyr::select(data_model, id_i, civ4, civ4_c, civ4_g, civ4_m, civ4_w, civ4_b), 
+          by = 'id_i')
+
+data_5 <- left_join(non_plausible_values, 
+          dplyr::select(data_model, id_i, civ5, civ5_c, civ5_g, civ5_m, civ5_w, civ5_b), 
+          by = 'id_i') 
+
+# ---------------------------------------- 
+# check variable format
+# ---------------------------------------- 
+
+data_1 %>%
+r4sda::variables_table() %>%
+knitr::kable()
+
+# ---------------------------------------- 
+# export each of those to MPLUS format
+# ---------------------------------------- 
+
+library(MplusAutomation)
+prepareMplusData(data_1, paste0(mplus_folder, 'data_gen_1.dat'), inpfile = TRUE) 
+prepareMplusData(data_2, paste0(mplus_folder, 'data_gen_2.dat'), inpfile = TRUE)
+prepareMplusData(data_3, paste0(mplus_folder, 'data_gen_3.dat'), inpfile = TRUE)
+prepareMplusData(data_4, paste0(mplus_folder, 'data_gen_4.dat'), inpfile = TRUE)
+prepareMplusData(data_5, paste0(mplus_folder, 'data_gen_5.dat'), inpfile = TRUE)
+
+# ---------------------------------------- 
+# Create a data list file
+# ---------------------------------------- 
+
+data_list <-
+'data_gen_1.dat
+ data_gen_2.dat
+ data_gen_3.dat
+ data_gen_4.dat
+ data_gen_5.dat'
+
+write(data_list,file=paste0(mplus_folder,'data_gen_list.dat'),ncolumns=1)
+
+}
+
+
+# -------------------------------------------------------------------
+# generate data for many groups in specific folders
+# -------------------------------------------------------------------
+
+export_to_mplus(data=chl_09, folder=folder_1)
+export_to_mplus(data=chl_16, folder=folder_2)
+export_to_mplus(data=col_09, folder=folder_3)
+export_to_mplus(data=col_16, folder=folder_4)
+export_to_mplus(data=dom_09, folder=folder_5)
+export_to_mplus(data=dom_16, folder=folder_6)
+export_to_mplus(data=mex_09, folder=folder_7)
+export_to_mplus(data=mex_16, folder=folder_8)
+export_to_mplus(data=gtm_09, folder=folder_9)
+export_to_mplus(data=pry_09, folder=folder_10)
+export_to_mplus(data=per_09, folder=folder_11)
+
+```
+
